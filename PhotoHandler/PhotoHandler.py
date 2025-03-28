@@ -1,4 +1,6 @@
 import math
+import os
+import cv2
 
 class PhotoHandler:
     def __init__(self, colors = False):
@@ -29,12 +31,17 @@ class PhotoHandler:
             "bianco": (255, 255, 255)
         }
 
+        self.consoleW = 0
+        self.consoleH = 0
+
     def handlePhoto(self, file, frame = False, colors = False):
         # Prendo la larghezza e l'altezza della console
-        import os
-        import cv2
-
         rows, columns = os.popen('stty size', 'r').read().split()
+
+        if self.consoleW != columns or self.consoleH != rows:
+            self.consoleW = columns
+            self.consoleH = rows
+            os.system('clear')
 
         # Prendo la larghezza e l'altezza dell'immagine con cv2
         if file:

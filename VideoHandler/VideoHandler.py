@@ -16,12 +16,17 @@ class VideoHandler:
         handler = PhotoHandler(self.colors)
 
         # Converto il video in ASCII
+        skipFrame = 1
         for i in range(frames):
             # Leggo il frame in scala di grigi
             ret, frame = cap.read()
 
             if not ret:
                 break
+
+            # Salto i frame se necessario
+            if skipFrame > 1 and i % skipFrame != 0:
+                continue
 
             timeStart = time.time()
             handler.handlePhoto(False, frame, False)
@@ -34,6 +39,13 @@ class VideoHandler:
             # Attendo il tempo necessario per mantenere il framerate
             if timeToWait > 0:
                 time.sleep(timeToWait)
+            else :
+                rapporto = 1 + (-timeToWait * framerate)
+
+                if rapporto > 1:
+                    skipFrame = int(rapporto)
+                else:
+                    skipFrame = 1
 
         cap.release()
             

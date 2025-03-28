@@ -39,9 +39,8 @@ class VideoHandler:
             # Attendo il tempo necessario per mantenere il framerate
             if timeToWait > 0:
                 time.sleep(timeToWait)
-            else :
+            else:
                 rapporto = 1 + (-timeToWait * framerate)
-
                 if rapporto > 1:
                     skipFrame = int(rapporto)
                 else:

@@ -1,12 +1,17 @@
+import threading
+import keyboard
+import time
+import cv2
+from PhotoHandler.PhotoHandler import PhotoHandler
+
 class VideoHandler:
     def __init__(self, colors = False):
         self.colors = colors
+        self.paused = False
+        self.currFrame = 0
 
     def handleVideo(self, file):
         # Prendo la larghezza e l'altezza della console
-        import cv2
-        import time
-        from PhotoHandler.PhotoHandler import PhotoHandler
 
         # Prendo la larghezza e l'altezza del video
         cap = cv2.VideoCapture(file)
@@ -17,7 +22,18 @@ class VideoHandler:
 
         # Converto il video in ASCII
         skipFrame = 1
-        for i in range(frames):
+
+        # Lancio un thread per la gestione del video, per metterlo in pausa e/o andare avanti o indietro
+        vidMngr = threading.Thread(target=self.videoManager, args=(cap, frames, framerate))
+        vidMngr.start()
+
+        while self.currFrame < frames:
+            self.currFrame += 1
+            i = self.currFrame
+            
+            while self.paused:
+                print('', end='\r')
+                time.sleep(0.1)
             # Leggo il frame in scala di grigi
             ret, frame = cap.read()
 
@@ -46,6 +62,44 @@ class VideoHandler:
                 else:
                     skipFrame = 1
 
+            #mostro una barra di avanzamento del video, che occupa tutta la larghezza della console
+            progress = int((i / frames) * handler.finalMediaWidth) 
+            print('[' + ('#' * progress) + (' ' * (handler.finalMediaWidth - progress - 2)) + ']')
+
         cap.release()
+        cv2.destroyAllWindows()
+        vidMngr.join()
+
+    def videoManager(self, cap, frames, framerate):
+        while cap.isOpened():
+            time.sleep(0.2)
+
+            if keyboard.is_pressed('space'):
+                self.paused = True
+            else:
+                if keyboard.is_pressed('right'):
+                    self.paused = True
+                    current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+                    new_frame = min(current_frame + framerate * 5, frames - 1)
+                    self.currFrame = new_frame
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, new_frame)
+                    self.paused = False
+                else:
+                    if keyboard.is_pressed('left'):
+                        self.paused = True
+                        current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+                        new_frame = max(current_frame - framerate * 5, 0)
+                        self.currFrame = new_frame
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, new_frame)
+                        self.paused = False
             
+            print('', end='\r')
+
+            while self.paused:
+                print('', end='\r')
+                time.sleep(0.2)
+                if keyboard.is_pressed('space'):
+                    self.paused = False
+                    break
+
 

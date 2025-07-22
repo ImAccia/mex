@@ -1,12 +1,11 @@
 import math
-import os
 import cv2
-import shutil
 import numpy as np
-
+import shutil
+import os
 
 class PhotoHandler:
-    def __init__(self, colors = False):
+    def __init__(self, colors=False):
         self.colors = colors
 
         # Lista codici ansi per colori console
@@ -36,58 +35,57 @@ class PhotoHandler:
 
         self.charset = "·`'\".-:!~^*+<>io?vc)(}{JYXZOMW#@"
 
+        self.finalMediaWidth = 0
+        self.finalMediaHeight = 0
         self.consoleW = 0
         self.consoleH = 0
-        self.finalMediaHeight = 0
-        self.finalMediaWidth = 0
-        self.calculateMeidaSize = True
+        self.calculateMediaSize = True
 
-
-    def handlePhoto(self, file, frame = False, colors = False):
-        # Prendo la larghezza e l'altezza della console, anche per windows
-        # rows, columns = os.popen('stty size', 'r').read().split()
-        columns, rows = shutil.get_terminal_size((80, 24))
-
-        if self.consoleW != columns or self.consoleH != rows:
-            self.consoleW = columns
-            self.consoleH = rows
-            os.system('clear || cls')
-            self.calculateMeidaSize = True
-
-        # Prendo la larghezza e l'altezza dell'immagine con cv2
+    def handlePhoto(self, file, frame=False, use_curses=False, x=False, y=False):
         if file:
             img = cv2.imread(file)
         else:
             img = frame
 
-        if self.calculateMeidaSize:
-            imgHeight, imgWidth = img.shape[:2]
+        if not use_curses:
+            term_w, term_h = shutil.get_terminal_size((80, 24))
+            ascii_str = self.getAscii(img, term_w, term_h)
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print("\033[H" + ascii_str)
+        else:
+            # In modalità curses, restituisco la stringa
+            return self.getAscii(img, x, y)
 
-            # Mantengo l'aspect ratio dell'immagine e la ridimensiono 
-            newWidth = self.consoleW
+    def getAscii(self, frame, term_w, term_h):
+        if self.consoleW != term_w or self.consoleH != term_h:
+            self.consoleW = term_w
+            self.consoleH = term_h
+            self.calculateMediaSize = True
+
+        if self.calculateMediaSize:
+            imgHeight, imgWidth = frame.shape[:2]
+            newWidth = term_w
             newHeight = int(imgHeight * newWidth / imgWidth)
 
-            # Se l'altezza è maggiore della console, ridimensiono l'immagine
-            if newHeight >( self.consoleH * 2) - 5:
-                newHeight = (self.consoleH * 2) - 5
+            if newHeight > (term_h * 2) - 5:
+                newHeight = (term_h * 2) - 5
                 newWidth = int(imgWidth * newHeight / imgHeight)
-            
-            self.finalMediaHeight = newHeight
-            self.finalMediaWidth = newWidth
-            self.calculateMeidaSize = False
 
-        # Ridimensiono l'immagine
-        img = cv2.resize(img, (self.finalMediaWidth, self.finalMediaHeight))
+            self.finalMediaWidth = newWidth
+            self.finalMediaHeight = newHeight
+            self.calculateMediaSize = False
+
+        frame = cv2.resize(frame, (self.finalMediaWidth, self.finalMediaHeight))
 
         if not self.colors:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Converto l'immagine in ASCII e la stampo a schermo
-        toPrint = ''
+        ascii_lines = []
         for y in range(0, self.finalMediaHeight - 1, 2):
+            line = ""
             for x in range(self.finalMediaWidth):
-                pixel = img[y, x]
-                pixelY2 = img[y + 1, x]
+                pixel = frame[y, x]
+                pixelY2 = frame[y + 1, x]
                 avg = (np.float32(pixel) + np.float32(pixelY2)) / 2
 
                 if self.colors:
@@ -99,17 +97,18 @@ class PhotoHandler:
                     color = ''
                     index = int(avg / 510 * len(self.charset))
 
-                toPrint += color + self.charset[index]
-            toPrint += '\n'
+                char = color + self.charset[min(index, len(self.charset) - 1)]
+                line += char
+            ascii_lines.append(line)
 
-        # Stampo l'immagine a schermo sovrascrivendo il contenuto precedente, senza cancellarlo
-        print("\033[H" + toPrint + self.colorsToAnsi['reset'])
+        return '\n'.join(ascii_lines) + self.colorsToAnsi['reset']
 
-    # Funzione per calcolare la distanza Euclidea
     def euclideanDistance(self, colore1, colore2):
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(colore1, colore2)))
 
-    # Funzione per trovare il colore più vicino
     def findColor(self, pixel):
-        colore_prossimo = min(self.colorsToPixel, key=lambda nome: self.euclideanDistance(pixel, self.colorsToPixel[nome]))
+        colore_prossimo = min(
+            self.colorsToPixel,
+            key=lambda nome: self.euclideanDistance(pixel, self.colorsToPixel[nome])
+        )
         return colore_prossimo

@@ -44,10 +44,12 @@ class VideoHandler:
                 self.paused = True
                 self.currFrame = min(self.currFrame + framerate * 5, frames - 1)
                 cap.set(cv2.CAP_PROP_POS_FRAMES, self.currFrame)
+                self.paused = False
             elif key == curses.KEY_LEFT:
                 self.paused = True
                 self.currFrame = max(self.currFrame - framerate * 5, 0)
                 cap.set(cv2.CAP_PROP_POS_FRAMES, self.currFrame)
+                self.paused = False
 
             if self.paused:
                 time.sleep(0.1)

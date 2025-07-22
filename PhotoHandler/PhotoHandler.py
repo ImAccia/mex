@@ -51,7 +51,7 @@ class PhotoHandler:
             term_w, term_h = shutil.get_terminal_size((80, 24))
             ascii_str = self.getAscii(img, term_w, term_h)
             os.system('cls' if os.name == 'nt' else 'clear')
-            print("\033[H" + ascii_str)
+            print(("\033[H" if os.name == 'nt' else '') + ascii_str)
         else:
             # In modalità curses, restituisco la stringa
             return self.getAscii(img, x, y)
@@ -101,7 +101,7 @@ class PhotoHandler:
                 line += char
             ascii_lines.append(line)
 
-        return '\n'.join(ascii_lines) + self.colorsToAnsi['reset']
+        return '\n'.join(ascii_lines) + (self.colorsToAnsi['reset'] if os.name == 'nt' else '') 
 
     def euclideanDistance(self, colore1, colore2):
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(colore1, colore2)))

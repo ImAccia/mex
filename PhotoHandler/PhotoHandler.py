@@ -7,6 +7,7 @@ import os
 class PhotoHandler:
     def __init__(self, colors=False):
         self.colors = colors
+        self.cursed = False
 
         # Lista codici ansi per colori console
         self.colorsToAnsi = {
@@ -21,15 +22,15 @@ class PhotoHandler:
             'reset': '\033[0m'
         }
 
-        # Colori di riferimento (nome, valore RGB)
+        # Colori di riferimento (nome, valore BGR)
         self.colorsToPixel = {
-            "nero": (-150, -150, -150),
-            "rosso": (255, 0, 0),
+            "nero": (-100, -100, -100),
+            "rosso": (0, 0, 255),
             "verde": (0, 255, 0),
-            "giallo": (255, 255, 0),
-            "blu": (0, 0, 255),
+            "giallo": (0, 255, 255),
+            "blu": (255, 0, 0),
             "magenta": (255, 0, 255),
-            "ciano": (0, 255, 255),
+            "ciano": (255, 255, 0),
             "bianco": (255, 255, 255)
         }
 
@@ -42,6 +43,7 @@ class PhotoHandler:
         self.calculateMediaSize = True
 
     def handlePhoto(self, file, frame=False, use_curses=False, x=False, y=False):
+        self.cursed = use_curses
         if file:
             img = cv2.imread(file)
         else:
@@ -50,8 +52,8 @@ class PhotoHandler:
         if not use_curses:
             term_w, term_h = shutil.get_terminal_size((80, 24))
             ascii_str = self.getAscii(img, term_w, term_h)
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print(("\033[H" if os.name == 'nt' else '') + ascii_str)
+            os.system('cls' if (os.name == 'nt' and not self.cursed) else 'clear')
+            print(("\033[H" if (os.name == 'nt' and not self.cursed) else '') + ascii_str)
         else:
             # In modalità curses, restituisco la stringa
             return self.getAscii(img, x, y)
@@ -77,7 +79,7 @@ class PhotoHandler:
 
         frame = cv2.resize(frame, (self.finalMediaWidth, self.finalMediaHeight))
 
-        if not self.colors:
+        if not self.colors or self.cursed:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         ascii_lines = []
@@ -88,7 +90,7 @@ class PhotoHandler:
                 pixelY2 = frame[y + 1, x]
                 avg = (np.float32(pixel) + np.float32(pixelY2)) / 2
 
-                if self.colors:
+                if self.colors and not self.cursed:
                     # Trova il colore più vicino
                     ansiIdx = self.findColor(avg)
                     color = self.colorsToAnsi[ansiIdx]
@@ -101,7 +103,7 @@ class PhotoHandler:
                 line += char
             ascii_lines.append(line)
 
-        return '\n'.join(ascii_lines) + (self.colorsToAnsi['reset'] if os.name == 'nt' else '') 
+        return '\n'.join(ascii_lines) + (self.colorsToAnsi['reset'] if (os.name == 'nt' and not self.cursed) else '') 
 
     def euclideanDistance(self, colore1, colore2):
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(colore1, colore2)))

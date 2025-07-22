@@ -41,6 +41,10 @@ class VideoHandler:
                 self.currFrame = max(self.currFrame - framerate * 5, 0)
                 cap.set(cv2.CAP_PROP_POS_FRAMES, self.currFrame)
                 self.paused = False
+            elif key == 'q':
+                import os
+                os.system('cls' if os.name == 'nt' else 'clear')
+                break
 
             if self.paused:
                 time.sleep(0.1)
@@ -77,7 +81,7 @@ class VideoHandler:
             except AttributeError:
                 k = key.name  # arrows, space, etc.
             with self.keyLock:
-                if k in ['space', 'left', 'right']:
+                if k in ['space', 'left', 'right', 'q']:
                     self.lastKey = k
 
         with kb.Listener(on_press=on_press) as listener:

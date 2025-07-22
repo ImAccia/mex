@@ -23,11 +23,11 @@ class Mex:
     def startFileHandling(self, file, video, photo):
         if photo:
             from PhotoHandler.PhotoHandler import PhotoHandler
-            pH = PhotoHandler(sys.argv[2] if len(sys.argv) == 3 else False)
+            pH = PhotoHandler(sys.argv[2] if len(sys.argv) == 3 and os.name == 'nt' else False)
             pH.handlePhoto(file, False)
         elif video:
             from VideoHandler.VideoHandler import VideoHandler
-            pH = VideoHandler(sys.argv[2] if len(sys.argv) == 3 else False)
+            pH = VideoHandler(sys.argv[2] if len(sys.argv) == 3 and os.name == 'nt' else False)
             pH.handleVideo(file)
 
 if __name__ == '__main__':
